@@ -406,6 +406,7 @@
       <div class="progress-wrap" id="progressWrap">
         <div class="progress-text"><span id="progText"></span><button class="link-btn" id="allOk">未檢項目全設為正常</button></div>
         <div class="progress"><i id="progBar"></i></div>
+        <label class="autonext"><input type="checkbox" id="autoNext" ${LS.get('autoNext', true) ? 'checked' : ''}> 選完自動跳到下一項</label>
       </div>
 
       <ol class="checklist" id="checklist"></ol>
@@ -428,6 +429,7 @@
     $('#i_summary').addEventListener('input', e => { insp.summary = e.target.value; markDirty(); });
     $('#takePhoto').addEventListener('click', () => $('#photoCamera').click());
     $('#pickPhoto').addEventListener('click', () => $('#photoPick').click());
+    $('#autoNext').addEventListener('change', e => LS.set('autoNext', e.target.checked));
     $('#allOk').addEventListener('click', () => {
       let n = 0; insp.items.forEach(it => { if (!it.status) { it.status = 'O'; n++; } });
       if (!n) { toast('沒有未檢的項目'); return; }
@@ -488,6 +490,7 @@
       rerenderItem(li, it);
       state.dirty = true; saveDraft(); updateProgress();
       if (it.status === 'X' && !it.value) setTimeout(() => $(`#checklist .item[data-idx="${li.dataset.idx}"] [data-f="value"]`)?.focus(), 30);
+      else if (it.status && $('#autoNext')?.checked) scrollToNext(+li.dataset.idx);
     } else if (e.target.closest('[data-open]')) {
       it._open = true; const idx = li.dataset.idx; rerenderItem(li, it);
       $(`#checklist .item[data-idx="${idx}"] [data-f="value"]`)?.focus();
@@ -501,6 +504,21 @@
   });
   function rerenderItem(li, it) {
     li.outerHTML = itemHTML(it, +li.dataset.idx);
+  }
+
+  /* 選完正常 / 不適用後，捲到下一個未檢項目；異常項目留在原地填說明 */
+  let nextTimer;
+  function scrollToNext(idx) {
+    clearTimeout(nextTimer);
+    nextTimer = setTimeout(() => {
+      const items = state.cur?.items; if (!items) return;
+      let target = items.findIndex((x, i) => i > idx && !x.status);
+      if (target < 0) target = items.findIndex(x => !x.status);
+      const el = target >= 0 ? $(`#checklist .item[data-idx="${target}"]`) : $('#i_summary')?.closest('.card');
+      if (!el) return;
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      el.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
+    }, 220);
   }
 
   function updateProgress() {
