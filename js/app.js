@@ -226,7 +226,7 @@
   /* ---------- 站點新增 / 編輯 ---------- */
   async function viewSiteEdit(id) {
     const isNew = id === 'new';
-    const site = isNew ? { name: '', address: '', power: '', equipment: '', cable: '', note: '' } : await Store.get('sites', id);
+    const site = isNew ? { name: '', address: '', power: '', equipment: '', cable: DEFAULT_CABLE, note: '' } : await Store.get('sites', id);
     if (!site) { location.hash = '#/'; return; }
     setTop({ eyebrow: isNew ? '新增' : '編輯站點', title: isNew ? '新增站點' : site.name, back: true });
     const f = (key, label, ph, type = 'text') => `
@@ -252,13 +252,25 @@
           ${f('power', '現場電力容量', '例：40A')}
           ${f('equipment', '設備規格及數量', '例：AC 7KW*1')}
         </div>
-        ${f('cable', '電力及纜線規格', '例：XLPE 8mm²')}
+        <div class="field combo" id="cableCombo">
+          <label for="f_cable">電力及纜線規格</label>
+          <div class="combo-box">
+            <input id="f_cable" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="cableList"
+              autocomplete="off" value="${esc(site.cable)}" placeholder="選擇或自行輸入，例：XLPE 8mm²">
+            <button type="button" class="combo-clear" id="cableClear" aria-label="清除" ${site.cable ? '' : 'hidden'}>×</button>
+            <button type="button" class="combo-toggle" id="cableToggle" aria-label="展開常用規格">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <ul class="combo-list" id="cableList" role="listbox" hidden></ul>
+        </div>
         <label class="field"><span>備註</span><textarea id="f_note" rows="2" placeholder="停車位編號、聯絡窗口等">${esc(site.note)}</textarea></label>
         <p class="hint" id="cableHint" hidden></p>
       </form>
       <div class="savebar"><button class="btn primary block big" id="saveSite">${isNew ? '建立站點' : '儲存'}</button></div>`;
 
     await setupSiteCombo(id);
+    setupCableCombo();
 
     // 線徑提醒：數字過小又沒有寫平方，可能是單位填錯
     const hint = $('#cableHint');
@@ -268,7 +280,7 @@
       hint.hidden = !(m && parseFloat(m[1]) < 3.5);
       hint.textContent = '線徑通常以 mm²（截面積）標示。7kW 單相約 32A，一般需 5.5–8 mm² 以上，請確認數值與單位。';
     };
-    $('#f_cable').addEventListener('input', checkCable); checkCable();
+    $('#f_cable').addEventListener('change', checkCable); checkCable();
 
     const save = async () => {
       const data = {};
@@ -284,6 +296,66 @@
     };
     $('#siteForm').addEventListener('submit', e => { e.preventDefault(); save(); });
     $('#saveSite').addEventListener('click', save);
+  }
+
+  /* 纜線規格：常用規格下拉，也可自行輸入其他規格 */
+  const DEFAULT_CABLE = 'XLPE 8mm²';
+  const CABLE_OPTIONS = [
+    ['XLPE 5.5mm²', '小功率 AC 樁分路'],
+    ['XLPE 8mm²', 'AC 7kW 單相常用'],
+    ['XLPE 14mm²', 'AC 樁長距離配線 / 多樁分路'],
+    ['XLPE 22mm²', 'AC 多樁幹線'],
+    ['XLPE 30mm²', '幹線'],
+    ['XLPE 38mm²', '幹線'],
+    ['XLPE 50mm²', 'DC 快充 / 幹線'],
+    ['XLPE 60mm²', 'DC 快充 / 幹線'],
+    ['XLPE 80mm²', 'DC 快充 / 幹線'],
+    ['XLPE 100mm²', 'DC 快充 / 總幹線'],
+    ['XLPE 125mm²', 'DC 快充 / 總幹線'],
+    ['XLPE 150mm²', 'DC 快充 / 總幹線'],
+    ['XLPE 3.5mm²', '控制 / 小負載'],
+    ['PVC 8mm²', ''],
+    ['PVC 14mm²', ''],
+  ];
+  function setupCableCombo() {
+    const input = $('#f_cable'), list = $('#cableList'), clearBtn = $('#cableClear');
+    let shown = [], active = -1;
+    const isOption = v => CABLE_OPTIONS.some(([o]) => o === v.trim());
+    const close = () => { list.hidden = true; input.setAttribute('aria-expanded', 'false'); active = -1; };
+    const draw = (showAll) => {
+      const q = norm(input.value).replace(/²/g, '').replace(/平方/g, '');
+      shown = CABLE_OPTIONS.filter(([o]) => showAll || !q || norm(o).replace(/²/g, '').includes(q));
+      const cur = input.value.trim();
+      list.innerHTML = (shown.length ? shown.map(([o, note], i) => `
+        <li role="option" id="cab${i}" data-i="${i}" class="${i === active ? 'active' : ''}${o === cur ? ' current' : ''}" aria-selected="${o === cur}">
+          <div class="opt-top"><strong>${esc(o)}</strong>${o === DEFAULT_CABLE ? '<span class="opt-tag">預設</span>' : ''}</div>
+          ${note ? `<span class="opt-addr">${esc(note)}</span>` : ''}
+        </li>`).join('') : '')
+        + (cur && !isOption(cur) ? `<li class="combo-empty">使用自行輸入的「${esc(cur)}」</li>` : '');
+      list.hidden = !list.innerHTML; input.setAttribute('aria-expanded', String(!list.hidden));
+    };
+    const pick = i => {
+      const o = shown[i]; if (!o) return;
+      input.value = o[0]; clearBtn.hidden = false; close();
+      input.dispatchEvent(new Event('change'));
+      input.blur();
+    };
+    // 目前值是清單中的規格時，點開就顯示全部，方便換選
+    input.addEventListener('focus', () => draw(isOption(input.value) || !input.value));
+    input.addEventListener('input', () => { active = -1; clearBtn.hidden = !input.value; draw(false); input.dispatchEvent(new Event('change')); });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown') { active = Math.min(shown.length - 1, active + 1); draw(true); e.preventDefault(); }
+      else if (e.key === 'ArrowUp') { active = Math.max(0, active - 1); draw(true); e.preventDefault(); }
+      else if (e.key === 'Enter') { if (!list.hidden && active >= 0) pick(active); else close(); e.preventDefault(); }
+      else if (e.key === 'Escape') close();
+    });
+    list.addEventListener('pointerdown', e => { const li = e.target.closest('li[data-i]'); if (li) { e.preventDefault(); pick(+li.dataset.i); } });
+    $('#cableToggle').addEventListener('click', () => { if (list.hidden) { input.focus(); draw(true); } else close(); });
+    clearBtn.addEventListener('click', () => { input.value = ''; clearBtn.hidden = true; input.focus(); draw(true); input.dispatchEvent(new Event('change')); });
+    document.addEventListener('pointerdown', function outside(e) {
+      if (!document.body.contains(input)) { document.removeEventListener('pointerdown', outside); return; }
+      if (!e.target.closest('#cableCombo')) close();
+    });
   }
 
   /* 站點名稱：從場站列表下拉搜尋，選取後帶入名稱與地址；也可自行輸入 */

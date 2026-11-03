@@ -201,7 +201,7 @@ button { cursor: pointer; }
 .combo-box { position: relative; display: flex; align-items: center; }
 .combo-box input {
   width: 100%; min-width: 0; min-height: 50px; padding: 10px 84px 10px 12px; font-size: 16px; font-weight: 600;
-  border: 1.5px solid var(--accent); border-radius: 10px; background: var(--surface);
+  border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface);
 }
 .combo-box input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .combo-toggle, .combo-clear { position: absolute; top: 3px; width: 42px; height: 44px; border: 0; background: none; color: var(--muted); display: grid; place-items: center; }
@@ -214,6 +214,8 @@ button { cursor: pointer; }
 .combo-list li[data-i] { padding: 10px 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 2px; cursor: pointer; }
 .combo-list li[data-i] + li[data-i] { border-top: 1px solid var(--line); border-radius: 0; }
 .combo-list li.active, .combo-list li[data-i]:active { background: var(--accent-soft); }
+.combo-list li.current strong { color: var(--accent); }
+.combo-list li.current .opt-top::after { content: '✓'; color: var(--accent); font-weight: 800; }
 .combo-list li.done { opacity: .55; cursor: default; }
 .opt-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .opt-top strong { font-size: 15px; min-width: 0; }
@@ -325,3 +327,4 @@ button { cursor: pointer; }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
 @media (max-width: 360px) { .grid2, .btn-row { grid-template-columns: 1fr; } }
+.combo-box input::placeholder { font-weight: 400; color: var(--muted); }
