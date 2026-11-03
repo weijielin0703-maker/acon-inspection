@@ -234,8 +234,20 @@
         <input id="f_${key}" type="${type}" value="${esc(site[key])}" placeholder="${ph}"></label>`;
     app.innerHTML = `
       <form class="card form" id="siteForm" novalidate>
-        ${f('name', '站點名稱 *', '例：汐止同興')}
-        ${f('address', '站點地址', '例：新北市汐止區大同路一段…')}
+        <div class="field combo" id="combo">
+          <label for="f_name">站點名稱 *</label>
+          <div class="combo-box">
+            <input id="f_name" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="comboList"
+              autocomplete="off" enterkeyhint="search" value="${esc(site.name)}" placeholder="搜尋場站名稱、地區或地址">
+            <button type="button" class="combo-clear" id="comboClear" aria-label="清除" ${site.name ? '' : 'hidden'}>×</button>
+            <button type="button" class="combo-toggle" id="comboToggle" aria-label="展開場站清單">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <ul class="combo-list" id="comboList" role="listbox" hidden></ul>
+          <p class="combo-meta" id="comboMeta" hidden></p>
+        </div>
+        ${f('address', '站點地址', '選擇場站後自動帶入')}
         <div class="grid2">
           ${f('power', '現場電力容量', '例：40A')}
           ${f('equipment', '設備規格及數量', '例：AC 7KW*1')}
@@ -245,6 +257,8 @@
         <p class="hint" id="cableHint" hidden></p>
       </form>
       <div class="savebar"><button class="btn primary block big" id="saveSite">${isNew ? '建立站點' : '儲存'}</button></div>`;
+
+    await setupSiteCombo(id);
 
     // 線徑提醒：數字過小又沒有寫平方，可能是單位填錯
     const hint = $('#cableHint');
@@ -270,6 +284,71 @@
     };
     $('#siteForm').addEventListener('submit', e => { e.preventDefault(); save(); });
     $('#saveSite').addEventListener('click', save);
+  }
+
+  /* 站點名稱：從場站列表下拉搜尋，選取後帶入名稱與地址；也可自行輸入 */
+  const norm = t => String(t || '').toLowerCase().replace(/acon-eco/g, '').replace(/臺/g, '台').replace(/\s+/g, '');
+  const shortName = n => String(n).replace(/^acon-eco\s*/i, '');
+  async function setupSiteCombo(editingId) {
+    const master = window.SITE_MASTER || [];
+    const input = $('#f_name'), list = $('#comboList'), meta = $('#comboMeta'), clearBtn = $('#comboClear');
+    const existing = new Map((await Store.all('sites')).filter(s => s.id !== editingId).map(s => [s.name, s.id]));
+    const index = master.map(m => ({ ...m, key: norm(m.name + ' ' + m.address + ' ' + m.type) }));
+    let shown = [], active = -1;
+
+    const showMeta = () => {
+      const m = master.find(x => x.name === input.value.trim());
+      meta.hidden = !m;
+      if (m) meta.textContent = [m.type, m.kw, m.slots != null ? m.slots + ' 格' : ''].filter(Boolean).join(' · ');
+      clearBtn.hidden = !input.value;
+    };
+    const close = () => { list.hidden = true; input.setAttribute('aria-expanded', 'false'); active = -1; };
+    const draw = () => {
+      const tokens = input.value.split(/\s+/).map(norm).filter(Boolean);
+      const hits = index.filter(m => tokens.every(t => m.key.includes(t)));
+      shown = hits.slice(0, 60);
+      if (!master.length) { list.innerHTML = '<li class="combo-empty">沒有場站列表資料</li>'; }
+      else if (!shown.length) { list.innerHTML = `<li class="combo-empty">場站列表沒有符合的站點，可直接用輸入的名稱建立。</li>`; }
+      else {
+        list.innerHTML = shown.map((m, i) => {
+          const done = existing.has(m.name);
+          return `<li role="option" id="opt${i}" data-i="${i}" class="${done ? 'done' : ''}${i === active ? ' active' : ''}" aria-selected="${i === active}" aria-disabled="${done}">
+            <div class="opt-top"><strong>${esc(shortName(m.name))}</strong>${done ? '<span class="pill none">已建立</span>' : `<span class="opt-tag">${esc(m.type)}</span>`}</div>
+            <span class="opt-addr">${esc(m.address)}</span>
+          </li>`;
+        }).join('') + (hits.length > shown.length ? `<li class="combo-empty">還有 ${hits.length - shown.length} 筆，請輸入更多關鍵字</li>` : '');
+      }
+      list.hidden = false; input.setAttribute('aria-expanded', 'true');
+      input.setAttribute('aria-activedescendant', active >= 0 ? 'opt' + active : '');
+    };
+    const open = () => { draw(); input.scrollIntoView({ block: 'start', behavior: 'smooth' }); };
+    const pick = i => {
+      const m = shown[i]; if (!m) return;
+      if (existing.has(m.name)) { toast('這個站點已經建立過了'); return; }
+      input.value = m.name;
+      $('#f_address').value = m.address;
+      close(); showMeta();
+      $('#f_power').focus({ preventScroll: true });
+    };
+
+    input.addEventListener('focus', open);
+    input.addEventListener('input', () => { active = -1; draw(); showMeta(); });
+    input.addEventListener('keydown', e => {
+      if (list.hidden && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { draw(); return; }
+      if (e.key === 'ArrowDown') { active = Math.min(shown.length - 1, active + 1); draw(); e.preventDefault(); }
+      else if (e.key === 'ArrowUp') { active = Math.max(0, active - 1); draw(); e.preventDefault(); }
+      else if (e.key === 'Enter' && !list.hidden && active >= 0) { pick(active); e.preventDefault(); }
+      else if (e.key === 'Escape') close();
+    });
+    // pointerdown 先於 blur，避免清單在點選前就關掉
+    list.addEventListener('pointerdown', e => { const li = e.target.closest('li[data-i]'); if (li) { e.preventDefault(); pick(+li.dataset.i); } });
+    $('#comboToggle').addEventListener('click', () => { if (list.hidden) { input.focus(); open(); } else close(); });
+    clearBtn.addEventListener('click', () => { input.value = ''; showMeta(); input.focus(); draw(); });
+    document.addEventListener('pointerdown', function outside(e) {
+      if (!document.body.contains(input)) { document.removeEventListener('pointerdown', outside); return; }
+      if (!e.target.closest('#combo')) close();
+    });
+    showMeta();
   }
 
   /* ---------- 巡檢表 ---------- */

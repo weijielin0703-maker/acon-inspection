@@ -1,7 +1,7 @@
 /* 離線快取：App 外殼先用快取，背景更新 */
-const CACHE = 'acon-inspection-v1';
+const CACHE = 'acon-inspection-v2';
 const ASSETS = [
-  './', 'index.html', 'css/app.css', 'js/store.js', 'js/export.js', 'js/app.js',
+  './', 'index.html', 'css/app.css', 'js/sites-master.js', 'js/store.js', 'js/export.js', 'js/app.js',
   'vendor/xlsx.full.min.js', 'vendor/jszip.min.js', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png',
 ];
