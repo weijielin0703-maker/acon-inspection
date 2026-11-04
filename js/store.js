@@ -91,27 +91,18 @@
       await Store.del('sites', id);
     },
 
-    /* 首次開啟：放入現有系統中的汐止同興資料，方便上手 */
-    async seedIfFirstRun() {
-      if (await Store.getMeta('seeded', false)) return;
+    /* 移除舊版自動帶入的「汐止同興」範例（只在沒有被使用過時才刪，執行一次） */
+    async removeSampleOnce() {
+      if (await Store.getMeta('sampleRemoved', false)) return;
       const sites = await Store.all('sites');
-      if (!sites.length) {
-        const siteId = uid();
-        await Store.put('sites', {
-          id: siteId, name: '汐止同興', address: '新北市汐止區大同路一段339-2號旁空地',
-          power: '40A', equipment: 'AC 7KW*1', cable: 'XLPE 1.31mm', note: '',
-          createdAt: Date.now(), updatedAt: Date.now(),
-        });
-        const items = DEFAULT_CHECKLIST.map(c => ({
-          ...c, status: c.name === '消防 / 安全設備' ? 'X' : 'O',
-          value: c.name === '消防 / 安全設備' ? '無滅火器' : '', note: '',
-        }));
-        await Store.put('inspections', {
-          id: uid(), siteId, date: '2026-10-15', inspector: 'jay', items, photos: [],
-          summary: '', createdAt: Date.now(), updatedAt: Date.now(),
-        });
+      const sample = sites.find(s => s.name === '汐止同興' && s.address === '新北市汐止區大同路一段339-2號旁空地');
+      if (sample) {
+        const list = await Store.bySite(sample.id);
+        const untouched = list.length === 1 && list[0].date === '2026-10-15' && list[0].inspector === 'jay'
+          && !(list[0].photos || []).length && (sample.updatedAt - sample.createdAt) < 1000;
+        if (untouched || list.length === 0 && (sample.updatedAt - sample.createdAt) < 1000) await Store.deleteSite(sample.id);
       }
-      await Store.setMeta('seeded', true);
+      await Store.setMeta('sampleRemoved', true);
     },
 
     /* 完整備份（含照片 base64） */

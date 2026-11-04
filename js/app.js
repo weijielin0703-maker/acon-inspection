@@ -817,7 +817,7 @@
 
   /* ---------- 啟動 ---------- */
   (async function start() {
-    try { await Store.seedIfFirstRun(); } catch (e) { console.error(e); }
+    try { await Store.removeSampleOnce(); } catch (e) { console.error(e); }
     if (navigator.storage?.persist) navigator.storage.persist().catch(() => { });
     render();
     if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => { });
