@@ -771,6 +771,7 @@
     openSheet(`
       <h2 class="sheet-title">選單</h2>
       <div class="menu">
+        <button data-m="allZip"><b>匯出全站壓縮檔（各站 Excel）</b><span>ZIP 檔，內含每站一個 Excel（含照片）與一份全站總表</span></button>
         <button data-m="all"><b>匯出全站 Excel（含照片）</b><span>站點總覽、待改善異常、全部明細，加上每站最近一次巡檢與照片</span></button>
         <button data-m="allLite"><b>匯出全站 Excel（不含照片）</b><span>只有總覽、異常、明細，檔案小、傳得快</span></button>
         <button data-m="checklist"><b>編輯巡檢項目</b><span>新增、刪除、調整順序</span></button>
@@ -781,6 +782,7 @@
       $$('[data-m]', sh).forEach(b => b.addEventListener('click', async () => {
         const m = b.dataset.m; closeSheet();
         if (m === 'all') runExport(() => Exporter.all({ withPhotos: true }));
+        if (m === 'allZip') runExport(() => Exporter.allZip((i, n) => toast(`產生中 ${i} / ${n} 站…`)));
         if (m === 'allLite') runExport(() => Exporter.all({ withPhotos: false }));
         if (m === 'checklist') go('#/checklist');
         if (m === 'backup') runExport(() => Exporter.backup());

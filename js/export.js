@@ -239,6 +239,29 @@
     return { blob, filename: `相簿_${safe(site.name)}_${today()}.zip` };
   }
 
+  /* 全站壓縮檔：每站一個 Excel（含照片）＋全站總表 */
+  async function allSitesZip(onProgress) {
+    const [sites, inspections] = await Promise.all([Store.all('sites'), Store.all('inspections')]);
+    const withData = sites.filter(s => inspections.some(i => i.siteId === s.id)).sort((a, b) => a.name.localeCompare(b.name));
+    if (!withData.length) throw new Error('還沒有任何巡檢紀錄');
+    const zip = new JSZip();
+    const day = today();
+    const folder = zip.folder(`巡檢_全站_${day}`);
+    const { wb: sumWb } = await allWorkbook({ withPhotos: false });
+    folder.file(`00_全站總表_${day}.xlsx`, await wbBlob(sumWb));
+    const used = new Set();
+    for (let i = 0; i < withData.length; i++) {
+      onProgress && onProgress(i + 1, withData.length);
+      const { wb } = await siteWorkbook(withData[i].id);
+      let name = safe(withData[i].name) || '站點', n = name, k = 2;
+      while (used.has(n)) n = name + '_' + k++;
+      used.add(n);
+      folder.file(`${n}.xlsx`, await wbBlob(wb));
+    }
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+    return { blob, filename: `巡檢_全站_${day}.zip`, count: withData.length };
+  }
+
   /* 手機優先用系統分享（可直接傳 LINE / 存到檔案），不支援時改下載 */
   async function deliver(blob, filename) {
     const file = new File([blob], filename, { type: blob.type });
@@ -258,6 +281,7 @@
     STATUS_TEXT, latestOf, abnormal,
     async site(siteId) { const { wb, filename } = await siteWorkbook(siteId); return deliver(await wbBlob(wb), filename); },
     async all(opts = { withPhotos: true }) { const { wb, filename } = await allWorkbook(opts); return deliver(await wbBlob(wb), filename); },
+    async allZip(onProgress) { const { blob, filename } = await allSitesZip(onProgress); return deliver(blob, filename); },
     async album(siteId) { const { blob, filename } = await albumZip(siteId); return deliver(blob, filename); },
     async backup() {
       const data = await Store.exportBackup();
