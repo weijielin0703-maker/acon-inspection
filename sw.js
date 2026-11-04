@@ -1,8 +1,8 @@
 /* 離線快取：App 外殼先用快取，背景更新 */
-const CACHE = 'acon-inspection-v4';
+const CACHE = 'acon-inspection-v5';
 const ASSETS = [
   './', 'index.html', 'css/app.css', 'js/sites-master.js', 'js/store.js', 'js/export.js', 'js/app.js',
-  'vendor/xlsx.full.min.js', 'vendor/jszip.min.js', 'manifest.webmanifest',
+  'vendor/exceljs.min.js', 'vendor/jszip.min.js', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png',
 ];
 self.addEventListener('install', e => {

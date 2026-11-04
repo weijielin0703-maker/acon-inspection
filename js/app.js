@@ -771,7 +771,8 @@
     openSheet(`
       <h2 class="sheet-title">選單</h2>
       <div class="menu">
-        <button data-m="all"><b>匯出全站 Excel</b><span>站點總覽、待改善異常、全部明細</span></button>
+        <button data-m="all"><b>匯出全站 Excel（含照片）</b><span>站點總覽、待改善異常、全部明細，加上每站最近一次巡檢與照片</span></button>
+        <button data-m="allLite"><b>匯出全站 Excel（不含照片）</b><span>只有總覽、異常、明細，檔案小、傳得快</span></button>
         <button data-m="checklist"><b>編輯巡檢項目</b><span>新增、刪除、調整順序</span></button>
         <button data-m="backup"><b>下載備份（JSON）</b><span>含照片。資料只存在這支手機，換機前請先備份</span></button>
         <button data-m="restore"><b>還原備份</b><span>從備份檔匯入資料</span></button>
@@ -779,7 +780,8 @@
       <p class="small muted center">資料儲存在本機瀏覽器，不會上傳到任何伺服器。</p>`, sh => {
       $$('[data-m]', sh).forEach(b => b.addEventListener('click', async () => {
         const m = b.dataset.m; closeSheet();
-        if (m === 'all') runExport(() => Exporter.all());
+        if (m === 'all') runExport(() => Exporter.all({ withPhotos: true }));
+        if (m === 'allLite') runExport(() => Exporter.all({ withPhotos: false }));
         if (m === 'checklist') go('#/checklist');
         if (m === 'backup') runExport(() => Exporter.backup());
         if (m === 'restore') $('#importFile').click();
