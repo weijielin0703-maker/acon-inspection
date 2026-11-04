@@ -2,8 +2,11 @@
 (function () {
   const STATUS_TEXT = { O: 'O 正常', X: 'X 異常', NA: '— 不適用', '': '未檢' };
   const COLOR = { head: 'FF0F5D73', headInk: 'FFFFFFFF', bad: 'FFFBE3E0', badInk: 'FFC0362C', ok: 'FF1D7F47', line: 'FFD6E0E3', soft: 'FFF2F6F7' };
-  const PHOTO_W = 330;          // 照片在 Excel 中的寬度（px）
-  const ROW_PX = 20;            // 預設列高 15pt ≈ 20px
+  const PHOTO_W = 400;          // 照片在 Excel 中的寬度（px）
+  const ROW_PX = 20;            // 照片區列高 15pt ≈ 20px
+  const FONT = '微軟正黑體';     // 統一字型，避免各電腦預設字型不同造成擠字
+  const LINE_PT = 20;           // 每行文字高度（pt）
+  const PAD_PT = 8;             // 每列上下留白（pt）
 
   const latestOf = list => list.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.createdAt - a.createdAt)[0];
   const abnormal = insp => (insp?.items || []).filter(i => i.status === 'X');
@@ -22,27 +25,27 @@
     row.eachCell(c => {
       c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR.head } };
       c.font = { bold: true, color: { argb: COLOR.headInk } };
-      c.alignment = { vertical: 'middle', wrapText: true };
+      c.alignment = { vertical: 'middle', wrapText: true, indent: 1 };
       c.border = box;
     });
-    row.height = 22;
+    row.height = 30;
   }
   function bodyRow(row, bad) {
     row.eachCell({ includeEmpty: true }, c => {
       c.border = box;
-      c.alignment = { vertical: 'top', wrapText: true };
+      c.alignment = c.col === 1 ? { vertical: 'middle', horizontal: 'center' } : { vertical: 'middle', wrapText: true, indent: 1 };
       if (bad) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR.bad } };
     });
   }
   /* 依欄寬估算換行數並設定固定列高，讓照片位置在各種檢視器都一致 */
-  const textWidth = t => [...String(t ?? '')].reduce((n, ch) => n + (ch.charCodeAt(0) > 0x2e80 ? 2 : 1), 0);
+  const textWidth = t => [...String(t ?? '')].reduce((n, ch) => n + (ch.charCodeAt(0) > 0x2e80 ? 2.2 : 1.15), 0);
   function fitHeight(ws, row) {
     let lines = 1;
     row.eachCell((c, col) => {
-      const w = (ws.getColumn(col).width || 10) - 0.5;
+      const w = (ws.getColumn(col).width || 10) - 3;   // 扣掉縮排與框線
       String(c.value ?? '').split('\n').forEach(part => { lines = Math.max(lines, Math.ceil(textWidth(part) / w) || 1); });
     });
-    row.height = Math.max(18, lines * 15 + 3);
+    row.height = lines * LINE_PT + PAD_PT;
   }
   function table(ws, header, rows, isBad) {
     headerRow(ws.addRow(header));
@@ -59,10 +62,10 @@
   /* 把照片排成兩欄放在工作表下方，每張下面附說明 */
   async function addPhotos(wb, ws, photos, anchors) {
     if (!photos.length) return;
-    ws.addRow([]).height = 18;
+    ws.addRow([]).height = 14;
     const title = ws.addRow(['', '現場照片', `${photos.length} 張`]);
-    title.getCell(2).font = { bold: true, size: 12 };
-    title.height = 22;
+    title.getCell(2).font = { bold: true, size: 13 };
+    title.height = 30;
     let row = title.number + 2;          // 1-based：標題下空一列再放照片
     for (let i = 0; i < photos.length; i += 2) {
       let tallest = 0;
@@ -80,9 +83,11 @@
         const cap = ws.getCell(capRow, anchors[k] + 1);
         cap.value = `${i + k + 1}. ${p.caption || '（無說明）'}`;
         cap.font = { color: { argb: 'FF5B6D74' } };
+        cap.alignment = { vertical: 'top' };
       }
       const used = Math.ceil(tallest / ROW_PX) + 2;
       for (let r = row; r < row + used; r++) ws.getRow(r).height = 15;   // 15pt = 20px，與 ROW_PX 對應
+      ws.getRow(row + Math.ceil(tallest / ROW_PX)).height = 24;          // 說明列加高；照片下方仍有留白
       row += used;
     }
     // 讓後續 addRow 接在照片之後
@@ -91,9 +96,11 @@
 
   async function addInspectionSheet(wb, site, insp, label) {
     const ws = wb.addWorksheet(sheetName(wb, label || insp.date || '未填日期'));
-    ws.columns = [5, 18, 34, 12, 20, 24].map(w => ({ width: w }));
+    ws.columns = [6, 24, 46, 14, 26, 28].map(w => ({ width: w }));
     const t = ws.addRow([`${site.name}　巡檢表`]);
-    t.getCell(1).font = { bold: true, size: 14 };
+    t.getCell(1).font = { bold: true, size: 16 };
+    t.getCell(1).alignment = { vertical: 'middle' };
+    t.height = 36;
     ws.mergeCells(t.number, 1, t.number, 6);
     const info = [
       ['巡檢日期', insp.date || '', '巡檢人員', insp.inspector || ''],
@@ -105,23 +112,31 @@
       const row = ws.addRow(['', r[0], r[1], r[2] || '', r[3] || '']);
       row.getCell(2).font = { bold: true, color: { argb: 'FF5B6D74' } };
       row.getCell(4).font = { bold: true, color: { argb: 'FF5B6D74' } };
+      row.eachCell({ includeEmpty: true }, c => { c.alignment = { vertical: 'middle', wrapText: true }; });
       if (r.length === 2) ws.mergeCells(row.number, 3, row.number, 6);
+      const len = r.length === 2 ? 46 + 14 + 26 + 28 : 46;
+      row.height = Math.ceil(textWidth(r[1]) / (len - 2) || 1) * LINE_PT + PAD_PT;
     });
-    ws.addRow([]);
+    ws.addRow([]).height = 12;
     table(ws, ['#', '檢查項目', '標準與說明', '狀態', '數值 / 紀錄', '備註'],
       insp.items.map((it, i) => [i + 1, it.name, it.std, STATUS_TEXT[it.status || ''], it.value || '', it.note || '']),
       r => r[3] === STATUS_TEXT.X);
     ws.eachRow(r => { const c = r.getCell(4); if (c.value === STATUS_TEXT.X) c.font = { bold: true, color: { argb: COLOR.badInk } }; else if (c.value === STATUS_TEXT.O) c.font = { color: { argb: COLOR.ok } }; });
-    ws.addRow([]);
+    ws.addRow([]).height = 12;
     const sum = ws.addRow(['', '異常項目數', abnormal(insp).length, '照片張數', (insp.photos || []).length]);
     sum.getCell(2).font = sum.getCell(4).font = { bold: true };
+    sum.eachCell({ includeEmpty: true }, c => { c.alignment = { vertical: 'middle', horizontal: 'left' }; });
+    sum.height = LINE_PT + PAD_PT;
     if (insp.summary) {
       const r = ws.addRow(['', '巡檢總結', insp.summary]);
       r.getCell(2).font = { bold: true };
       ws.mergeCells(r.number, 3, r.number, 6);
+      r.getCell(2).alignment = { vertical: 'top' };
       r.getCell(3).alignment = { wrapText: true, vertical: 'top' };
+      const lines = String(insp.summary).split('\n').reduce((n, part) => n + (Math.ceil(textWidth(part) / (46 + 14 + 26 + 28 - 3)) || 1), 0);
+      r.height = lines * LINE_PT + PAD_PT;
     }
-    ws.eachRow({ includeEmpty: true }, r => { if (!r.height) r.height = 18; });
+    ws.eachRow({ includeEmpty: true }, r => { if (!r.height) r.height = LINE_PT + PAD_PT; });
     ws.pageSetup = { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
     // 照片：B 欄、D 欄起各一張
     await addPhotos(wb, ws, insp.photos || [], [1, 3]);
@@ -137,7 +152,7 @@
     if (list.length > 1) {
       const ws = wb.addWorksheet('歷次對照');
       const dates = list.map(i => i.date);
-      ws.columns = [{ width: 18 }, ...dates.map(() => ({ width: 16 }))];
+      ws.columns = [{ width: 24 }, ...dates.map(() => ({ width: 20 }))];
       const names = [...new Set(list.flatMap(i => i.items.map(x => x.name)))];
       table(ws, ['檢查項目', ...dates], names.map(n => [n, ...list.map(i => {
         const it = i.items.find(x => x.name === n);
@@ -157,7 +172,7 @@
     sites.sort((a, b) => a.name.localeCompare(b.name));
 
     const ov = wb.addWorksheet('站點總覽');
-    ov.columns = [16, 34, 10, 16, 16, 12, 10, 8, 30, 8].map(w => ({ width: w }));
+    ov.columns = [26, 40, 12, 18, 18, 14, 12, 10, 34, 10].map(w => ({ width: w }));
     const issues = [];
     table(ov, ['站點', '地址', '電力容量', '設備規格及數量', '電力及纜線規格', '最近巡檢日', '巡檢人員', '異常數', '異常項目', '巡檢次數'],
       sites.map(s => {
@@ -170,12 +185,12 @@
     ov.views = [{ state: 'frozen', ySplit: 1 }];
 
     const is = wb.addWorksheet('待改善異常');
-    is.columns = [16, 12, 10, 18, 20, 24].map(w => ({ width: w }));
+    is.columns = [26, 14, 12, 22, 28, 30].map(w => ({ width: w }));
     table(is, ['站點', '巡檢日期', '巡檢人員', '異常項目', '數值 / 紀錄', '備註'], issues);
     is.views = [{ state: 'frozen', ySplit: 1 }];
 
     const dt = wb.addWorksheet('全部明細');
-    dt.columns = [16, 12, 10, 18, 34, 10, 20, 24].map(w => ({ width: w }));
+    dt.columns = [26, 14, 12, 22, 40, 12, 26, 28].map(w => ({ width: w }));
     const rows = [];
     inspections.slice().sort((a, b) => (byId[a.siteId]?.name || '').localeCompare(byId[b.siteId]?.name || '') || (b.date || '').localeCompare(a.date || ''))
       .forEach(insp => insp.items.forEach(it => rows.push([byId[insp.siteId]?.name || '(已刪除站點)', insp.date, insp.inspector || '', it.name, it.std, STATUS_TEXT[it.status || ''], it.value || '', it.note || ''])));
@@ -192,7 +207,14 @@
     return { wb, filename: `巡檢_全站_${today()}.xlsx` };
   }
 
+  /* 全部儲存格套用同一字型，保留原本的粗體、顏色、字級 */
+  function applyFont(wb) {
+    wb.eachSheet(ws => ws.eachRow({ includeEmpty: true }, row => row.eachCell({ includeEmpty: true }, c => {
+      c.font = { size: 11, ...(c.font || {}), name: FONT };
+    })));
+  }
   async function wbBlob(wb) {
+    applyFont(wb);
     const buf = await wb.xlsx.writeBuffer();
     return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   }
