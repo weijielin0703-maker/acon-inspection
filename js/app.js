@@ -11,6 +11,25 @@
     del(k) { try { localStorage.removeItem(k); } catch { } },
   };
 
+  const ICON = {
+    search: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    chev: '<svg class="chev" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>',
+    pin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2.3" fill="currentColor"/></svg>',
+    bolt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill="currentColor"/></svg>',
+    camera: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+    image: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 17l5-5 4 4 2-2 3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="15.5" cy="9.5" r="1.5" fill="currentColor"/></svg>',
+    excel: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l5 5v13H6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M14 3v6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 12l6 6M15 12l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    zip: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 4v3h2v2h-2v2h2v2h-2v2h2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
+    list: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="4" cy="6" r="1.3" fill="currentColor"/><circle cx="4" cy="12" r="1.3" fill="currentColor"/><circle cx="4" cy="18" r="1.3" fill="currentColor"/></svg>',
+    down: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 19h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    up: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 19h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    warn: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3l10 18H2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="18" r="1.2" fill="currentColor"/></svg>',
+    emptySites: '<svg viewBox="0 0 96 96" aria-hidden="true"><rect x="30" y="18" width="36" height="56" rx="6" fill="none" stroke="currentColor" stroke-width="3"/><path d="M52 30l-9 15h7l-2 12 10-16h-7l1-11z" fill="currentColor"/><path d="M20 80h56" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>',
+    emptyInsp: '<svg viewBox="0 0 96 96" aria-hidden="true"><rect x="22" y="16" width="52" height="66" rx="6" fill="none" stroke="currentColor" stroke-width="3"/><rect x="38" y="10" width="20" height="10" rx="3" fill="currentColor"/><path d="M34 40h28M34 52h28M34 64h18" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>',
+  };
+  const shortName = n => String(n || '').replace(/^acon-eco\s*/i, '');
+
   const app = $('#app');
   const state = { cur: null, dirty: false, photoUrls: new Map(), search: LS.get('search', '') };
 
@@ -103,12 +122,17 @@
   window.addEventListener('hashchange', render);
 
   /* ---------- 站點清單 ---------- */
+  function statusKind(insp) {
+    if (!insp) return 'none';
+    if (Exporter.abnormal(insp).length) return 'bad';
+    if (insp.items.some(i => !i.status)) return 'warn';
+    return 'ok';
+  }
   function statusPill(insp) {
-    if (!insp) return '<span class="pill none">未巡檢</span>';
-    const ab = Exporter.abnormal(insp).length;
-    const unchecked = insp.items.filter(i => !i.status).length;
-    if (ab) return `<span class="pill bad">異常 ${ab}</span>`;
-    if (unchecked) return `<span class="pill warn">未完成 ${unchecked}</span>`;
+    const k = statusKind(insp);
+    if (k === 'none') return '<span class="pill none">未巡檢</span>';
+    if (k === 'bad') return `<span class="pill bad">異常 ${Exporter.abnormal(insp).length}</span>`;
+    if (k === 'warn') return `<span class="pill warn">未完成 ${insp.items.filter(i => !i.status).length}</span>`;
     return '<span class="pill ok">全部正常</span>';
   }
 
@@ -122,41 +146,54 @@
 
     const totalAb = rows.reduce((n, r) => n + (r.last ? Exporter.abnormal(r.last).length : 0), 0);
     const never = rows.filter(r => !r.last).length;
+    let filter = LS.get('filter', 'all');
 
     app.innerHTML = `
-      <section class="summary">
-        <div><b class="num">${sites.length}</b><span>站點</span></div>
-        <div class="${totalAb ? 'is-bad' : ''}"><b class="num">${totalAb}</b><span>待改善異常</span></div>
-        <div><b class="num">${never}</b><span>未巡檢</span></div>
+      <section class="summary" role="group" aria-label="篩選">
+        <button data-f="all" class="${filter === 'all' ? 'on' : ''}"><b class="num">${sites.length}</b><span>站點</span></button>
+        <button data-f="bad" class="k-bad ${totalAb ? '' : 'zero'} ${filter === 'bad' ? 'on' : ''}"><b class="num">${totalAb}</b><span>待改善異常</span></button>
+        <button data-f="none" class="k-none ${filter === 'none' ? 'on' : ''}"><b class="num">${never}</b><span>未巡檢</span></button>
       </section>
-      <label class="search">
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <label class="search">${ICON.search}
         <input id="q" type="search" placeholder="搜尋站點名稱或地址" value="${esc(state.search)}" autocomplete="off">
       </label>
+      <div class="list-head" id="listHead" hidden></div>
       <ul class="site-list" id="siteList"></ul>
-      <button class="fab" id="addSite"><span aria-hidden="true">＋</span> 新增站點</button>`;
+      <button class="fab" id="addSite">${ICON.plus} 新增站點</button>`;
 
-    const listEl = $('#siteList');
+    const listEl = $('#siteList'), head = $('#listHead');
+    const FILTER_NAME = { bad: '有異常的站點', none: '尚未巡檢的站點' };
     const draw = () => {
       const q = state.search.trim().toLowerCase();
-      const shown = rows.filter(r => !q || r.s.name.toLowerCase().includes(q) || (r.s.address || '').toLowerCase().includes(q));
+      let shown = rows.filter(r => !q || r.s.name.toLowerCase().includes(q) || (r.s.address || '').toLowerCase().includes(q));
+      if (filter === 'bad') shown = shown.filter(r => statusKind(r.last) === 'bad');
+      if (filter === 'none') shown = shown.filter(r => !r.last);
+      $$('.summary button').forEach(b => b.classList.toggle('on', b.dataset.f === filter));
+      head.hidden = filter === 'all';
+      head.innerHTML = `<span>${FILTER_NAME[filter] || ''}（${shown.length}）</span><button type="button" id="clearFilter">顯示全部</button>`;
+      $('#clearFilter')?.addEventListener('click', () => { filter = 'all'; LS.set('filter', filter); draw(); });
       if (!rows.length) {
-        listEl.innerHTML = `<li class="empty"><p>還沒有站點。按右下角「新增站點」建立第一個，或從選單還原備份。</p></li>`;
+        listEl.innerHTML = `<li class="empty illu">${ICON.emptySites}<strong>還沒有站點</strong><p>按右下角「新增站點」從場站列表選一個開始，或從右上角選單還原備份。</p></li>`;
         return;
       }
-      if (!shown.length) { listEl.innerHTML = `<li class="empty"><p>找不到符合「${esc(state.search)}」的站點。</p></li>`; return; }
+      if (!shown.length) {
+        listEl.innerHTML = `<li class="empty illu">${ICON.search.replace('width="18" height="18"', '')}<strong>${q ? `找不到「${esc(state.search)}」` : '這個分類目前沒有站點'}</strong><p>${filter !== 'all' ? '換個分類或清除篩選再試試。' : '試試用地區或路名搜尋。'}</p></li>`;
+        return;
+      }
       listEl.innerHTML = shown.map(({ s, last, count }) => `
-        <li><a class="site-card" href="#/site/${s.id}">
+        <li><a class="site-card st-${statusKind(last)}" href="#/site/${s.id}">
           <div class="site-main">
-            <strong>${esc(s.name)}</strong>
-            <span class="muted small">${esc(s.address || '未填地址')}</span>
-            <span class="meta"><span class="num">${fmtDate(last?.date)}</span>${last?.inspector ? ' · ' + esc(last.inspector) : ''} · 共 ${count} 次</span>
+            <strong>${esc(shortName(s.name))}</strong>
+            <span class="addr">${esc(s.address || '未填地址')}</span>
+            <span class="meta"><span class="num">${fmtDate(last?.date)}</span>${last?.inspector ? `<i class="dot"></i>${esc(last.inspector)}` : ''}<i class="dot"></i>${count} 次巡檢</span>
           </div>
-          ${statusPill(last)}
+          <div class="site-side">${statusPill(last)}</div>
+          ${ICON.chev}
         </a></li>`).join('');
     };
     draw();
     $('#q').addEventListener('input', e => { state.search = e.target.value; LS.set('search', state.search); draw(); });
+    $$('.summary button').forEach(b => b.addEventListener('click', () => { filter = filter === b.dataset.f ? 'all' : b.dataset.f; LS.set('filter', filter); draw(); }));
     $('#addSite').addEventListener('click', () => go('#/site/new'));
   }
 
@@ -164,16 +201,22 @@
   async function viewSite(id) {
     const site = await Store.get('sites', id);
     if (!site) { app.innerHTML = `<div class="empty"><p>找不到這個站點，可能已被刪除。</p><a class="btn ghost" href="#/">回站點清單</a></div>`; return; }
-    setTop({ eyebrow: '站點', title: site.name, back: true });
+    setTop({ eyebrow: '站點', title: shortName(site.name), back: true });
     const list = (await Store.bySite(id)).sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.createdAt - a.createdAt);
     const last = list[0];
     const ab = last ? Exporter.abnormal(last) : [];
     const photoCount = list.reduce((n, i) => n + (i.photos || []).length, 0);
+    const thumbUrls = {};
+    for (const i of list) for (const p of (i.photos || []).slice(0, 3)) thumbUrls[p.id] = await photoUrl(p.id);
+    const thumbs = i => {
+      const ps = i.photos || []; if (!ps.length) return '';
+      return `<span class="thumbs">${ps.slice(0, 3).map(p => `<img src="${thumbUrls[p.id] || ''}" alt="">`).join('')}${ps.length > 3 ? `<span class="more">+${ps.length - 3}</span>` : ''}</span>`;
+    };
 
     app.innerHTML = `
-      <section class="card">
+      <section class="site-hero">
+        <div class="addr-row">${ICON.pin}<span>${esc(site.address || '未填地址')}</span></div>
         <dl class="spec">
-          <div class="wide"><dt>站點地址</dt><dd>${esc(site.address || '—')}</dd></div>
           <div><dt>現場電力容量</dt><dd class="num">${esc(site.power || '—')}</dd></div>
           <div><dt>設備規格及數量</dt><dd class="num">${esc(site.equipment || '—')}</dd></div>
           <div class="wide"><dt>電力及纜線規格</dt><dd class="num">${esc(site.cable || '—')}</dd></div>
@@ -183,24 +226,24 @@
       </section>
 
       ${ab.length ? `<section class="alert">
-        <strong>最近一次（${fmtDate(last.date)}）有 ${ab.length} 項異常</strong>
+        <strong>${ICON.warn}最近一次（${fmtDate(last.date)}）有 ${ab.length} 項異常</strong>
         <ul>${ab.map(x => `<li>${esc(x.name)}${x.value ? '：' + esc(x.value) : ''}</li>`).join('')}</ul>
       </section>` : ''}
 
-      <button class="btn primary block big" id="startInsp">開始新巡檢</button>
+      <button class="btn primary block big" id="startInsp">${ICON.plus} 開始新巡檢</button>
       <div class="btn-row">
-        <button class="btn ghost" id="expSite" ${list.length ? '' : 'disabled'}>匯出此站 Excel</button>
-        <button class="btn ghost" id="expAlbum" ${photoCount ? '' : 'disabled'}>匯出相簿</button>
+        <button class="btn ghost" id="expSite" ${list.length ? '' : 'disabled'}>${ICON.excel} 匯出 Excel</button>
+        <button class="btn ghost" id="expAlbum" ${photoCount ? '' : 'disabled'}>${ICON.image} 匯出相簿</button>
       </div>
 
-      <h2 class="section-title">巡檢紀錄 <span class="muted">${list.length} 次</span></h2>
+      <h2 class="section-title">巡檢紀錄 <span class="muted">${list.length} 次${photoCount ? ` · ${photoCount} 張照片` : ''}</span></h2>
       ${list.length ? `<ul class="history">${list.map(i => `
         <li><a href="#/insp/${i.id}">
           <span class="num date">${fmtDate(i.date)}</span>
-          <span class="who">${esc(i.inspector || '未填人員')}${(i.photos || []).length ? ` · ${i.photos.length} 張照片` : ''}</span>
+          <span class="who"><span>${esc(i.inspector || '未填人員')}</span>${thumbs(i)}</span>
           ${statusPill(i)}
         </a></li>`).join('')}</ul>`
-        : '<p class="empty small">還沒有巡檢紀錄。</p>'}
+        : `<div class="empty illu">${ICON.emptyInsp}<strong>還沒有巡檢紀錄</strong><p>按「開始新巡檢」建立第一筆。</p></div>`}
 
       <button class="btn text danger-text" id="delSite">刪除此站點</button>`;
 
@@ -360,7 +403,6 @@
 
   /* 站點名稱：從場站列表下拉搜尋，選取後帶入名稱與地址；也可自行輸入 */
   const norm = t => String(t || '').toLowerCase().replace(/acon-eco/g, '').replace(/臺/g, '台').replace(/\s+/g, '');
-  const shortName = n => String(n).replace(/^acon-eco\s*/i, '');
   async function setupSiteCombo(editingId) {
     const master = window.SITE_MASTER || [];
     const input = $('#f_name'), list = $('#comboList'), meta = $('#comboMeta'), clearBtn = $('#comboClear');
@@ -451,7 +493,7 @@
     }
     state.cur = insp; state.dirty = restored; state.draftKey = draftKey; state.pendingPhotoDeletes = [];
 
-    setTop({ eyebrow: site.name, title: insp._isNew ? '新巡檢' : `巡檢 ${fmtDate(insp.date)}`, back: true });
+    setTop({ eyebrow: shortName(site.name), title: insp._isNew ? '新巡檢' : `巡檢 ${fmtDate(insp.date)}`, back: true });
 
     app.innerHTML = `
       ${restored ? '<p class="note">已載入上次未儲存的草稿。</p>' : ''}
@@ -470,8 +512,8 @@
         <div class="card-head"><h2>現場照片 <span class="muted small" id="photoCount"></span></h2><span class="muted small">自動壓縮至 200KB 內</span></div>
         <div class="photo-grid" id="photoGrid"></div>
         <div class="btn-row">
-          <button class="btn primary-soft" id="takePhoto">拍照</button>
-          <button class="btn ghost" id="pickPhoto">從相簿選</button>
+          <button class="btn primary-soft" id="takePhoto">${ICON.camera} 拍照</button>
+          <button class="btn ghost" id="pickPhoto">${ICON.image} 從相簿選</button>
         </div>
       </section>
 
@@ -489,7 +531,7 @@
 
       ${insp._isNew ? '' : '<button class="btn text danger-text" id="delInsp">刪除這筆巡檢</button>'}
 
-      <div class="savebar"><button class="btn primary block big" id="saveInsp">儲存巡檢</button></div>`;
+      <div class="savebar"><button class="btn primary block big" id="saveInsp">儲存巡檢<span class="sub" id="saveSub"></span></button></div>`;
 
     renderChecklist();
     renderPhotos();
@@ -599,6 +641,7 @@
     const bad = items.filter(i => i.status === 'X').length;
     $('#progText').innerHTML = `已檢 <b class="num">${done}</b> / ${items.length}${bad ? ` · <span class="bad-text">異常 ${bad}</span>` : ''}`;
     $('#progBar').style.width = (items.length ? done / items.length * 100 : 0) + '%';
+    const sub = $('#saveSub'); if (sub) sub.textContent = done === items.length ? '（已完成）' : `（${done}/${items.length}）`;
     $('#progressWrap').classList.toggle('complete', done === items.length);
   }
 
@@ -771,12 +814,14 @@
     openSheet(`
       <h2 class="sheet-title">選單</h2>
       <div class="menu">
-        <button data-m="allZip"><b>匯出全站壓縮檔（各站 Excel）</b><span>ZIP 檔，內含每站一個 Excel（含照片）與一份全站總表</span></button>
-        <button data-m="all"><b>匯出全站 Excel（含照片）</b><span>站點總覽、待改善異常、全部明細，加上每站最近一次巡檢與照片</span></button>
-        <button data-m="allLite"><b>匯出全站 Excel（不含照片）</b><span>只有總覽、異常、明細，檔案小、傳得快</span></button>
-        <button data-m="checklist"><b>編輯巡檢項目</b><span>新增、刪除、調整順序</span></button>
-        <button data-m="backup"><b>下載備份（JSON）</b><span>含照片。資料只存在這支手機，換機前請先備份</span></button>
-        <button data-m="restore"><b>還原備份</b><span>從備份檔匯入資料</span></button>
+        <button data-m="allZip"><span class="mi">${ICON.zip}</span><span class="mt"><b>匯出全站壓縮檔</b><span>每站一個 Excel（含照片）＋全站總表</span></span></button>
+        <button data-m="all"><span class="mi">${ICON.excel}</span><span class="mt"><b>匯出全站 Excel（含照片）</b><span>總覽、待改善異常、明細，加上每站最近一次巡檢</span></span></button>
+        <button data-m="allLite"><span class="mi">${ICON.excel}</span><span class="mt"><b>匯出全站 Excel（不含照片）</b><span>只有三張總表，檔案小、傳得快</span></span></button>
+        <div class="menu-sep"></div>
+        <button data-m="checklist"><span class="mi">${ICON.list}</span><span class="mt"><b>編輯巡檢項目</b><span>新增、刪除、調整順序</span></span></button>
+        <div class="menu-sep"></div>
+        <button data-m="backup"><span class="mi">${ICON.down}</span><span class="mt"><b>下載備份（JSON）</b><span>含照片。換手機或換瀏覽器前先備份</span></span></button>
+        <button data-m="restore"><span class="mi">${ICON.up}</span><span class="mt"><b>還原備份</b><span>從備份檔匯入資料</span></span></button>
       </div>
       <p class="small muted center">資料儲存在本機瀏覽器，不會上傳到任何伺服器。</p>`, sh => {
       $$('[data-m]', sh).forEach(b => b.addEventListener('click', async () => {
