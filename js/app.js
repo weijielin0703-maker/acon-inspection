@@ -51,19 +51,66 @@
     clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
   }
 
-  function openSheet(html, bind) {
+  let sheetOnClose = null;
+  function openSheet(html, bind, onClose) {
     const sh = $('#sheet'), bd = $('#sheetBackdrop');
-    sh.innerHTML = `<div class="sheet-grip" aria-hidden="true"></div>${html}`;
+    sheetOnClose = onClose || null;
+    sh.innerHTML = `<div class="sheet-grip" aria-hidden="true"></div><button type="button" class="sheet-close" aria-label="關閉">✕</button>${html}`;
+    sh.style.transform = ''; sh.scrollTop = 0;
     sh.hidden = false; bd.hidden = false;
     requestAnimationFrame(() => { sh.classList.add('open'); bd.classList.add('open'); });
+    $('.sheet-close', sh).addEventListener('click', closeSheet);
     bind && bind(sh);
   }
   function closeSheet() {
     const sh = $('#sheet'), bd = $('#sheetBackdrop');
+    if (sh.hidden) return;
+    const cb = sheetOnClose; sheetOnClose = null;
+    sh.style.transform = ''; bd.style.opacity = '';
     sh.classList.remove('open'); bd.classList.remove('open');
-    setTimeout(() => { sh.hidden = true; bd.hidden = true; sh.innerHTML = ''; }, 200);
+    setTimeout(() => { sh.hidden = true; bd.hidden = true; sh.innerHTML = ''; }, 220);
+    cb && cb();
   }
   $('#sheetBackdrop').addEventListener('click', closeSheet);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+
+  /* 下拉關閉抽屜：抽屜捲到最上面時往下拖，超過 90px 或快速下滑就關閉 */
+  (function swipeToClose() {
+    const sh = $('#sheet'), bd = $('#sheetBackdrop');
+    let startY = 0, startT = 0, dy = 0, dragging = false, armed = false, lastY = 0, lastT = 0, vel = 0;
+    sh.addEventListener('touchstart', e => {
+      if (e.touches.length !== 1) return;
+      armed = sh.scrollTop <= 0 && !e.target.closest('input, textarea, select');
+      startY = lastY = e.touches[0].clientY; startT = lastT = performance.now(); vel = 0; dy = 0; dragging = false;
+    }, { passive: true });
+    sh.addEventListener('touchmove', e => {
+      if (!armed) return;
+      const d = e.touches[0].clientY - startY;
+      if (!dragging) {
+        if (d > 6 && sh.scrollTop <= 0) { dragging = true; sh.style.transition = 'none'; bd.style.transition = 'none'; }
+        else if (d < -6) { armed = false; return; }
+        else return;
+      }
+      dy = Math.max(0, d);
+      const y = e.touches[0].clientY, t = performance.now();
+      if (t > lastT) vel = 0.6 * ((y - lastY) / (t - lastT)) + 0.4 * vel;   // 平滑後的瞬間速度（px/ms）
+      lastY = y; lastT = t;
+      e.preventDefault();
+      sh.style.transform = `translateY(${dy}px)`;
+      bd.style.opacity = String(Math.max(0, 1 - dy / (sh.offsetHeight || 400)));
+    }, { passive: false });
+    const end = () => {
+      if (!dragging) { armed = false; return; }
+      dragging = false; armed = false;
+      sh.style.transition = ''; bd.style.transition = '';
+      const now = performance.now();
+      const fast = dy > 30 && now - lastT < 150 && (vel > 0.35 || (dy > 60 && now - startT < 280));
+      if (dy > 90 || fast) closeSheet();
+      else { sh.style.transform = ''; bd.style.opacity = ''; }
+    };
+    sh.addEventListener('touchend', end);
+    sh.addEventListener('touchcancel', end);
+  })();
 
   function confirmSheet({ title, message, ok = '確定', danger = false }) {
     return new Promise(resolve => {
@@ -74,8 +121,8 @@
           <button class="btn ghost" data-r="0">取消</button>
           <button class="btn ${danger ? 'danger' : 'primary'}" data-r="1">${esc(ok)}</button>
         </div>`, sh => {
-        $$('[data-r]', sh).forEach(b => b.addEventListener('click', () => { closeSheet(); resolve(b.dataset.r === '1'); }));
-      });
+        $$('[data-r]', sh).forEach(b => b.addEventListener('click', () => { const v = b.dataset.r === '1'; sheetOnClose = null; closeSheet(); resolve(v); }));
+      }, () => resolve(false));
     });
   }
 

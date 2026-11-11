@@ -160,3 +160,4 @@ html[data-skin="cyber"] .empty.illu svg { color: var(--line-2); filter: drop-sha
 html[data-skin="cyber"] .photo-img { border-radius: 0; border: 1px solid var(--line-2); }
 html[data-skin="cyber"] .photo-empty { border-color: var(--line-2); border-radius: 0; }
 html[data-skin="cyber"] .skin-row .seg2 button.on { color: var(--cyan); }
+html[data-skin="cyber"] .sheet-close { border-radius: 0; background: #060910; color: var(--cyan); border: 1px solid var(--line-2); }

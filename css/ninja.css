@@ -184,3 +184,4 @@ html[data-skin="ninja"] .empty.illu svg { color: var(--line-2); }
 .skin-row .seg2 button { border: 0; background: transparent; border-radius: 8px; padding: 7px 14px; font-weight: 700; font-size: 14px; color: var(--muted); }
 .skin-row .seg2 button.on { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
 html[data-skin="ninja"] .skin-row .seg2 button.on { color: var(--accent); }
+html[data-skin="ninja"] .sheet-close { border-radius: 6px; background: #2a2520; color: var(--accent-2); }
