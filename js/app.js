@@ -30,6 +30,16 @@
   };
   const shortName = n => String(n || '').replace(/^acon-eco\s*/i, '');
 
+  /* 外觀：ninja（忍者村風）或 plain（標準） */
+  const SKIN_COLOR = { ninja: '#1b1915', plain: '#0f5d73' };
+  const isNinja = () => document.documentElement.dataset.skin === 'ninja';
+  function applySkin(skin) {
+    document.documentElement.dataset.skin = skin;
+    LS.set('skin', skin);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', SKIN_COLOR[skin] || SKIN_COLOR.plain);
+  }
+  const N = (ninjaText, plainText) => isNinja() ? ninjaText : plainText;
+
   const app = $('#app');
   const state = { cur: null, dirty: false, photoUrls: new Map(), search: LS.get('search', '') };
 
@@ -334,7 +344,7 @@
       const rec = isNew ? { id: Store.uid(), createdAt: Date.now(), ...data } : { ...site, ...data };
       rec.updatedAt = Date.now();
       await Store.put('sites', rec);
-      toast(isNew ? '已建立站點' : '已儲存', 'ok');
+      toast(N(isNew ? '新據點登錄完成' : '已儲存', isNew ? '已建立站點' : '已儲存'), 'ok');
       location.hash = '#/site/' + rec.id;
     };
     $('#siteForm').addEventListener('submit', e => { e.preventDefault(); save(); });
@@ -547,7 +557,7 @@
     $('#allOk').addEventListener('click', () => {
       let n = 0; insp.items.forEach(it => { if (!it.status) { it.status = 'O'; n++; } });
       if (!n) { toast('沒有未檢的項目'); return; }
-      renderChecklist(); updateProgress(); markDirty(); toast(`${n} 項設為正常`);
+      renderChecklist(); updateProgress(); markDirty(); toast(N(`影分身之術！${n} 項一次設為正常`, `${n} 項設為正常`));
     });
     $('#saveInsp').addEventListener('click', saveInspection);
     $('#delInsp')?.addEventListener('click', async () => {
@@ -664,7 +674,7 @@
     for (const pid of state.pendingPhotoDeletes || []) await Store.del('photos', pid);
     state.pendingPhotoDeletes = [];
     state.dirty = false;
-    toast('巡檢已儲存', 'ok');
+    toast(N(unchecked ? '任務暫存，之後再補完' : '任務完成！巡檢已儲存', '巡檢已儲存'), 'ok');
     location.hash = '#/site/' + rec.siteId;
   }
 
@@ -757,7 +767,7 @@
       } catch (e) { console.error(e); toast(e.message || '照片處理失敗', 'bad'); }
     }
     state.dirty = true; saveDraft(); renderPhotos();
-    if (ok) toast(`已加入 ${ok} 張照片`, 'ok');
+    if (ok) toast(N(`情報收集完成，${ok} 張照片`, `已加入 ${ok} 張照片`), 'ok');
   }
   ['#photoCamera', '#photoPick'].forEach(sel => $(sel).addEventListener('change', e => { addFiles([...e.target.files]); e.target.value = ''; }));
 
@@ -823,7 +833,9 @@
         <button data-m="backup"><span class="mi">${ICON.down}</span><span class="mt"><b>下載備份（JSON）</b><span>含照片。換手機或換瀏覽器前先備份</span></span></button>
         <button data-m="restore"><span class="mi">${ICON.up}</span><span class="mt"><b>還原備份</b><span>從備份檔匯入資料</span></span></button>
       </div>
+      <div class="skin-row"><span>外觀</span><span class="seg2"><button type="button" data-skin="ninja" class="${isNinja() ? 'on' : ''}">忍者村</button><button type="button" data-skin="plain" class="${isNinja() ? '' : 'on'}">標準</button></span></div>
       <p class="small muted center">資料儲存在本機瀏覽器，不會上傳到任何伺服器。</p>`, sh => {
+      $$('[data-skin]', sh).forEach(b => b.addEventListener('click', () => { applySkin(b.dataset.skin); $$('[data-skin]', sh).forEach(x => x.classList.toggle('on', x === b)); toast(b.dataset.skin === 'ninja' ? '切換為忍者村風格' : '切換為標準外觀'); }));
       $$('[data-m]', sh).forEach(b => b.addEventListener('click', async () => {
         const m = b.dataset.m; closeSheet();
         if (m === 'all') runExport(() => Exporter.all({ withPhotos: true }));
@@ -864,6 +876,7 @@
 
   /* ---------- 啟動 ---------- */
   (async function start() {
+    applySkin(LS.get('skin', 'ninja'));
     try { await Store.removeSampleOnce(); } catch (e) { console.error(e); }
     if (navigator.storage?.persist) navigator.storage.persist().catch(() => { });
     render();
