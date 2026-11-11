@@ -31,8 +31,8 @@
   const shortName = n => String(n || '').replace(/^acon-eco\s*/i, '');
 
   /* 外觀：ninja（忍者村風）或 plain（標準） */
-  const SKIN_COLOR = { ninja: '#1b1915', plain: '#0f5d73' };
-  const isNinja = () => document.documentElement.dataset.skin === 'ninja';
+  const SKIN_COLOR = { ninja: '#1b1915', cyber: '#06080f', plain: '#0f5d73' };
+  const isNinja = () => ['ninja', 'cyber'].includes(document.documentElement.dataset.skin);
   function applySkin(skin) {
     document.documentElement.dataset.skin = skin;
     LS.set('skin', skin);
@@ -833,9 +833,9 @@
         <button data-m="backup"><span class="mi">${ICON.down}</span><span class="mt"><b>下載備份（JSON）</b><span>含照片。換手機或換瀏覽器前先備份</span></span></button>
         <button data-m="restore"><span class="mi">${ICON.up}</span><span class="mt"><b>還原備份</b><span>從備份檔匯入資料</span></span></button>
       </div>
-      <div class="skin-row"><span>外觀</span><span class="seg2"><button type="button" data-skin="ninja" class="${isNinja() ? 'on' : ''}">忍者村</button><button type="button" data-skin="plain" class="${isNinja() ? '' : 'on'}">標準</button></span></div>
+      <div class="skin-row"><span>外觀</span><span class="seg2">${[['cyber', '科幻忍村'], ['ninja', '忍者村'], ['plain', '標準']].map(([k, l]) => `<button type="button" data-skin="${k}" class="${document.documentElement.dataset.skin === k ? 'on' : ''}">${l}</button>`).join('')}</span></div>
       <p class="small muted center">資料儲存在本機瀏覽器，不會上傳到任何伺服器。</p>`, sh => {
-      $$('[data-skin]', sh).forEach(b => b.addEventListener('click', () => { applySkin(b.dataset.skin); $$('[data-skin]', sh).forEach(x => x.classList.toggle('on', x === b)); toast(b.dataset.skin === 'ninja' ? '切換為忍者村風格' : '切換為標準外觀'); }));
+      $$('[data-skin]', sh).forEach(b => b.addEventListener('click', () => { applySkin(b.dataset.skin); $$('[data-skin]', sh).forEach(x => x.classList.toggle('on', x === b)); toast({ cyber: '系統已切換：科幻忍村', ninja: '切換為忍者村風格', plain: '切換為標準外觀' }[b.dataset.skin]); }));
       $$('[data-m]', sh).forEach(b => b.addEventListener('click', async () => {
         const m = b.dataset.m; closeSheet();
         if (m === 'all') runExport(() => Exporter.all({ withPhotos: true }));
@@ -876,7 +876,7 @@
 
   /* ---------- 啟動 ---------- */
   (async function start() {
-    applySkin(LS.get('skin', 'ninja'));
+    applySkin(LS.get('skin', 'cyber'));
     try { await Store.removeSampleOnce(); } catch (e) { console.error(e); }
     if (navigator.storage?.persist) navigator.storage.persist().catch(() => { });
     render();

@@ -1,0 +1,162 @@
+/* 科幻忍村外觀：html[data-skin="cyber"]。永遠是暗色：機甲黑 × 霓虹橙 × 電光青，HUD 切角與掃描線 */
+html[data-skin="cyber"] {
+  --bg: #06080f;
+  --bg-2: #0b101c;
+  --surface: #0e1424;
+  --surface-2: #131b2e;
+  --line: #1f2d47;
+  --line-2: #2d4066;
+  --ink: #e8f0ff;
+  --ink-2: #c3d0ea;
+  --muted: #7f93b8;
+  --accent: #ff7a1a;
+  --accent-2: #ffa04d;
+  --accent-ink: #120800;
+  --accent-soft: #33200f;
+  --accent-glow: rgba(255, 122, 26, .45);
+  --cyan: #27d3ff;
+  --cyan-soft: rgba(39, 211, 255, .14);
+  --bar: linear-gradient(135deg, #070a12 0%, #0c1324 60%, #141424 100%);
+  --bar-ink: #e8f0ff;
+  --ok: #3df2a0;
+  --ok-soft: #0f3326;
+  --bad: #ff4d6a;
+  --bad-soft: #3a1220;
+  --warn: #ffd166;
+  --warn-soft: #3a2e0f;
+  --na: #8ea0c2;
+  --na-soft: #1a2436;
+  --shadow: 0 0 0 1px rgba(39, 211, 255, .10), 0 8px 24px rgba(0, 0, 0, .5);
+  --shadow-lg: 0 0 0 1px rgba(39, 211, 255, .18), 0 16px 40px rgba(0, 0, 0, .7);
+  --display: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --tech: "Orbitron", ui-monospace, "SF Mono", Menlo, monospace;
+  --cut: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  color-scheme: dark;
+}
+
+/* 背景：細格線＋掃描線＋橙青光暈 */
+html[data-skin="cyber"] body {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(39, 211, 255, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(39, 211, 255, .035) 1px, transparent 1px),
+    radial-gradient(ellipse at 15% 0%, rgba(255, 122, 26, .16), transparent 45%),
+    radial-gradient(ellipse at 90% 100%, rgba(39, 211, 255, .12), transparent 45%);
+  background-size: 28px 28px, 28px 28px, 100% 100%, 100% 100%;
+  background-attachment: fixed;
+}
+html[data-skin="cyber"] body::after {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 100;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .12) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply;
+}
+
+/* 標題列：HUD 橫條、掃描光 */
+html[data-skin="cyber"] .topbar { border-bottom: 1px solid var(--cyan); box-shadow: 0 0 18px rgba(39, 211, 255, .25), 0 6px 20px rgba(0, 0, 0, .5); overflow: hidden; }
+html[data-skin="cyber"] .topbar::after {
+  content: ""; position: absolute; left: -40%; top: 0; bottom: 0; width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(39, 211, 255, .14), transparent);
+  animation: scan 5s linear infinite;
+}
+html[data-skin="cyber"] .topbar { position: sticky; }
+@keyframes scan { to { left: 110%; } }
+html[data-skin="cyber"] .topbar-title h1 { font-weight: 900; letter-spacing: .08em; text-shadow: 0 0 12px rgba(255, 122, 26, .5); }
+html[data-skin="cyber"] .topbar-title .eyebrow { color: var(--cyan); opacity: 1; font-family: var(--tech); font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase; }
+html[data-skin="cyber"] .topbar-title .eyebrow::before { width: 8px; height: 8px; border-radius: 0; background: var(--accent); box-shadow: 0 0 8px var(--accent); transform: rotate(45deg); animation: blink 1.6s steps(2) infinite; }
+@keyframes blink { 50% { opacity: .35; } }
+html[data-skin="cyber"] .icon-btn { border-radius: 6px; }
+
+/* 卡片：切角 HUD 面板，左上角有青色角標 */
+html[data-skin="cyber"] .card, html[data-skin="cyber"] .site-hero, html[data-skin="cyber"] .item,
+html[data-skin="cyber"] .site-card, html[data-skin="cyber"] .history a, html[data-skin="cyber"] .summary button,
+html[data-skin="cyber"] .progress-wrap, html[data-skin="cyber"] .cl-row, html[data-skin="cyber"] .alert, html[data-skin="cyber"] .note {
+  border-radius: 0; clip-path: var(--cut); border: 1px solid var(--line-2);
+  background: linear-gradient(160deg, var(--surface) 0%, var(--bg-2) 100%);
+}
+html[data-skin="cyber"] .card::after, html[data-skin="cyber"] .site-hero::after, html[data-skin="cyber"] .item::after {
+  content: ""; position: absolute; right: 0; top: 0; width: 26px; height: 2px; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); opacity: .8;
+}
+html[data-skin="cyber"] .card, html[data-skin="cyber"] .site-hero { position: relative; }
+html[data-skin="cyber"] .site-hero .addr-row { border-bottom-color: var(--line-2); background: linear-gradient(90deg, var(--cyan-soft), transparent); }
+html[data-skin="cyber"] .site-hero .addr-row svg { color: var(--cyan); filter: drop-shadow(0 0 6px var(--cyan)); }
+html[data-skin="cyber"] .spec div { border-color: var(--line); }
+html[data-skin="cyber"] .spec dt { font-family: var(--tech); font-size: 10px; letter-spacing: .14em; color: var(--cyan); text-transform: uppercase; }
+html[data-skin="cyber"] .spec dd, html[data-skin="cyber"] .num { font-family: var(--tech); letter-spacing: .04em; }
+html[data-skin="cyber"] .section-title { font-family: var(--tech); font-size: 13px; letter-spacing: .18em; color: var(--cyan); text-transform: uppercase; }
+html[data-skin="cyber"] .section-title::before { content: "//"; margin-right: 8px; color: var(--accent); }
+html[data-skin="cyber"] .card-head h2 { letter-spacing: .06em; }
+
+/* 統計卡：數字發光 */
+html[data-skin="cyber"] .summary b { font-family: var(--tech); font-size: 24px; text-shadow: 0 0 14px var(--c, var(--cyan)); color: var(--c, var(--cyan)); }
+html[data-skin="cyber"] .summary button { --c: var(--cyan); }
+html[data-skin="cyber"] .summary span { font-size: 11px; letter-spacing: .08em; }
+html[data-skin="cyber"] .summary button::after { height: 2px; background: var(--c); box-shadow: 0 0 10px var(--c); left: 0; right: 0; }
+html[data-skin="cyber"] .summary button.on { background: linear-gradient(160deg, color-mix(in srgb, var(--c) 18%, var(--surface)), var(--bg-2)); border-color: var(--c); }
+
+/* 站點卡片 */
+html[data-skin="cyber"] .site-card::before { width: 3px; box-shadow: 0 0 10px var(--stripe, var(--line-2)); }
+html[data-skin="cyber"] .site-main strong { letter-spacing: .04em; }
+html[data-skin="cyber"] .site-main .meta { font-family: var(--tech); font-size: 10.5px; letter-spacing: .06em; }
+html[data-skin="cyber"] .chev { color: var(--cyan); }
+
+/* 狀態：發光徽章 */
+html[data-skin="cyber"] .pill { border-radius: 3px; background: transparent; border: 1px solid currentColor; box-shadow: 0 0 10px currentColor, inset 0 0 8px color-mix(in srgb, currentColor 25%, transparent); font-family: var(--tech); font-size: 11px; letter-spacing: .12em; }
+
+/* 按鈕：切角、霓虹 */
+html[data-skin="cyber"] .btn { border-radius: 0; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); letter-spacing: .08em; }
+html[data-skin="cyber"] .btn.primary { background: linear-gradient(135deg, var(--accent-2), var(--accent)); color: var(--accent-ink); box-shadow: 0 0 22px var(--accent-glow); font-weight: 900; }
+html[data-skin="cyber"] .btn.ghost { background: var(--surface-2); border: 1px solid var(--cyan); color: var(--cyan); box-shadow: inset 0 0 12px rgba(39, 211, 255, .12); }
+html[data-skin="cyber"] .btn.primary-soft { background: var(--accent-soft); color: var(--accent-2); border: 1px solid var(--accent); }
+html[data-skin="cyber"] .btn.big { font-size: 17px; }
+html[data-skin="cyber"] .fab { border-radius: 0; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); background: linear-gradient(135deg, var(--accent-2), var(--accent)); box-shadow: 0 0 28px var(--accent-glow); color: var(--accent-ink); font-weight: 900; letter-spacing: .08em; }
+html[data-skin="cyber"] .link-btn { color: var(--cyan); letter-spacing: .06em; }
+
+/* 表單 */
+html[data-skin="cyber"] .field input, html[data-skin="cyber"] .field textarea, html[data-skin="cyber"] .combo-box input,
+html[data-skin="cyber"] .item-fields input, html[data-skin="cyber"] .cl-fields input, html[data-skin="cyber"] .photo input, html[data-skin="cyber"] .search {
+  border-radius: 0; background: rgba(6, 8, 15, .55); border-color: var(--line-2); clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+html[data-skin="cyber"] .field input:focus, html[data-skin="cyber"] .field textarea:focus, html[data-skin="cyber"] .combo-box input:focus,
+html[data-skin="cyber"] .item-fields input:focus, html[data-skin="cyber"] .cl-fields input:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(39, 211, 255, .25), 0 0 16px rgba(39, 211, 255, .2); }
+html[data-skin="cyber"] .field > span, html[data-skin="cyber"] .combo > label { font-family: var(--tech); font-size: 10px; letter-spacing: .14em; color: var(--cyan); text-transform: uppercase; }
+html[data-skin="cyber"] .combo-list { border-radius: 0; border-color: var(--cyan); }
+html[data-skin="cyber"] .search { padding: 0 14px; }
+
+/* 檢查項目：O/X/— 像儀表按鍵 */
+html[data-skin="cyber"] .seg { background: #060910; border: 1px solid var(--line-2); border-radius: 0; padding: 3px; gap: 3px; }
+html[data-skin="cyber"] .seg button { border-radius: 0; color: var(--ink-2); font-family: var(--tech); }
+html[data-skin="cyber"] .seg .seg-O.on { background: var(--ok); color: #03140b; box-shadow: 0 0 16px rgba(61, 242, 160, .55); }
+html[data-skin="cyber"] .seg .seg-X.on { background: var(--bad); color: #fff; box-shadow: 0 0 16px rgba(255, 77, 106, .6); }
+html[data-skin="cyber"] .seg .seg-NA.on { background: var(--na); color: #0b1220; box-shadow: 0 0 12px rgba(142, 160, 194, .5); }
+html[data-skin="cyber"] .seg .on small { color: inherit; }
+html[data-skin="cyber"] .item::before { width: 3px; box-shadow: 0 0 10px currentColor; }
+html[data-skin="cyber"] .item.s-O::before { color: var(--ok); } html[data-skin="cyber"] .item.s-X::before { color: var(--bad); }
+html[data-skin="cyber"] .item.s-X { background: linear-gradient(160deg, #1d1020, var(--bg-2)); border-color: var(--bad); box-shadow: 0 0 18px rgba(255, 77, 106, .25); }
+html[data-skin="cyber"] .item-no { font-family: var(--tech); color: var(--cyan); }
+html[data-skin="cyber"] .item-no::before { content: "#"; opacity: .6; }
+
+/* 查克拉進度條 */
+html[data-skin="cyber"] .progress { height: 10px; background: #060910; border: 1px solid var(--line-2); border-radius: 0; }
+html[data-skin="cyber"] .progress i { border-radius: 0; background: linear-gradient(90deg, var(--cyan), var(--accent)); box-shadow: 0 0 14px var(--accent-glow); position: relative; }
+html[data-skin="cyber"] .progress i::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 6px, rgba(0, 0, 0, .35) 6px 8px); }
+html[data-skin="cyber"] .progress-wrap.complete .progress i { background: var(--ok); box-shadow: 0 0 16px rgba(61, 242, 160, .6); }
+html[data-skin="cyber"] .progress-text { font-family: var(--tech); font-size: 12px; letter-spacing: .08em; }
+html[data-skin="cyber"] .progress-text b { color: var(--accent-2); text-shadow: 0 0 10px var(--accent-glow); }
+
+/* 儲存列、抽屜、提示 */
+html[data-skin="cyber"] .savebar { background: rgba(6, 8, 15, .85); border-top: 1px solid var(--cyan); box-shadow: 0 -4px 24px rgba(39, 211, 255, .12); }
+html[data-skin="cyber"] .sheet { border-radius: 0; clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%, 0 16px); border-top: 1px solid var(--cyan); background: linear-gradient(180deg, var(--surface), var(--bg)); }
+html[data-skin="cyber"] .sheet-grip { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+html[data-skin="cyber"] .sheet-title { letter-spacing: .1em; }
+html[data-skin="cyber"] .menu button { border-radius: 0; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); background: var(--surface-2); border-color: var(--line-2); }
+html[data-skin="cyber"] .menu .mi { border-radius: 0; background: #060910; color: var(--cyan); border: 1px solid var(--line-2); box-shadow: inset 0 0 10px rgba(39, 211, 255, .15); }
+html[data-skin="cyber"] .toast { border-radius: 0; background: #060910; color: var(--cyan); border: 1px solid var(--cyan); box-shadow: 0 0 20px rgba(39, 211, 255, .35); font-family: var(--tech); font-size: 13px; letter-spacing: .08em; }
+html[data-skin="cyber"] .toast.ok { color: var(--ok); border-color: var(--ok); box-shadow: 0 0 20px rgba(61, 242, 160, .35); }
+html[data-skin="cyber"] .toast.bad { color: var(--bad); border-color: var(--bad); box-shadow: 0 0 20px rgba(255, 77, 106, .4); }
+html[data-skin="cyber"] .alert { color: var(--bad); border-left: 3px solid var(--bad); box-shadow: 0 0 18px rgba(255, 77, 106, .2); }
+html[data-skin="cyber"] .alert ul { color: var(--ink-2); }
+html[data-skin="cyber"] .note { color: var(--cyan); border-left: 3px solid var(--cyan); }
+html[data-skin="cyber"] .empty.illu svg { color: var(--line-2); filter: drop-shadow(0 0 8px rgba(39, 211, 255, .3)); }
+html[data-skin="cyber"] .photo-img { border-radius: 0; border: 1px solid var(--line-2); }
+html[data-skin="cyber"] .photo-empty { border-color: var(--line-2); border-radius: 0; }
+html[data-skin="cyber"] .skin-row .seg2 button.on { color: var(--cyan); }
